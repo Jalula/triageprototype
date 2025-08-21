@@ -273,6 +273,7 @@
               <div class="bar">
                 <button class="btn ghost" id="reset">Reset</button>
                 <button class="btn ghost" id="copy">Copy summary</button>
+                <button class="btn ghost" onclick="showLogicGuide()" style="background:#e0e7ff; color:#4338ca; border-color:#a5b4fc">📖 View Logic Guide</button>
                 <button class="btn secondary" id="speak">Speak result</button>
                 <button class="btn primary" id="compute">Compute triage level</button>
               </div>
@@ -462,6 +463,289 @@
       case 'tia_resolved': setVal('age',81); setVal('rf_stroke',true); setVal('lkwHours',2); setVal('sbp',158); setVal('hr',82); setVal('rr',18); break;
     }
     compute();
+  }
+
+  document.getElementById('compute').addEventListener('click', compute);
+  document.getElementById('reset').addEventListener('click', resetForm);
+  document.getElementById('copy').addEventListener('click', copySummary);
+  document.getElementById('speak').addEventListener('click', speakResult);
+  function showLogicGuide(){
+    const guideHTML = `
+      <div style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; overflow:auto">
+        <div style="max-width:1200px; margin:40px auto; background:white; border-radius:12px; padding:32px; max-height:90vh; overflow:auto">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
+            <h2 style="margin:0">Triage Logic & Decision Guide</h2>
+            <button onclick="this.closest('div').parentElement.remove()" style="background:#f3f4f6; border:none; padding:8px 16px; border-radius:8px; cursor:pointer">Close ✕</button>
+          </div>
+          
+          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:16px; margin-bottom:24px">
+            <strong>⚠️ Important:</strong> This is a prototype decision support tool. All decisions require clinical judgment and medical director approval.
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">1. Decision Flow Overview</h3>
+          <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:24px">
+            <pre style="font-family:monospace; font-size:13px; line-height:1.6">
+┌─────────────────┐
+│ Patient Input   │
+└────────┬────────┘
+         ▼
+┌─────────────────┐     YES    ┌──────────────┐
+│ Red Flags?      │────────────▶│ LEVEL 3      │
+└────────┬────────┘             │ ED/911       │
+         │NO                    └──────────────┘
+         ▼
+┌─────────────────┐     YES    ┌──────────────┐
+│ Severe Vitals?  │────────────▶│ LEVEL 3      │
+└────────┬────────┘             │ ED/911       │
+         │NO                    └──────────────┘
+         ▼
+┌─────────────────┐     ≥2     ┌──────────────┐
+│ qSOFA Score     │────────────▶│ LEVEL 3      │
+└────────┬────────┘             │ ED/911       │
+         │<2                    └──────────────┘
+         ▼
+┌─────────────────┐
+│ Calculate       │
+│ Complexity      │
+└────────┬────────┘
+         ▼
+┌─────────────────────────────┐
+│ Severity + Complexity Map   │
+├─────────────────────────────┤
+│ Mild + Complex ≤3 → L1      │
+│ Moderate OR Complex 4-7 → L2│
+│ Severe OR Complex ≥8 → L3   │
+└─────────────────────────────┘
+         ▼
+┌─────────────────┐
+│ Special Cases   │
+│ • Head injury + │
+│   anticoag → L3 │
+│ • Neuro ≤24h →L3│
+│ • Uncertainty →+1│
+└─────────────────┘
+            </pre>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">2. Red Flag Criteria (Any = Level 3)</h3>
+          <table style="width:100%; border-collapse:collapse; margin-bottom:24px">
+            <thead>
+              <tr style="background:#f3f4f6">
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Red Flag</th>
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Clinical Significance</th>
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Immediate Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Unconscious/Hard to arouse</td><td style="padding:12px; border:1px solid #e5e7eb">Possible CNS emergency, overdose, stroke</td><td style="padding:12px; border:1px solid #e5e7eb">911 with ALS</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">FAST positive/Focal neuro</td><td style="padding:12px; border:1px solid #e5e7eb">Stroke/TIA - time sensitive</td><td style="padding:12px; border:1px solid #e5e7eb">911, note last known well</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">High-risk chest pain</td><td style="padding:12px; border:1px solid #e5e7eb">ACS/MI risk</td><td style="padding:12px; border:1px solid #e5e7eb">911 with cardiac protocol</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Severe SOB</td><td style="padding:12px; border:1px solid #e5e7eb">Respiratory failure risk</td><td style="padding:12px; border:1px solid #e5e7eb">911 with O2 ready</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Major bleeding + symptoms</td><td style="padding:12px; border:1px solid #e5e7eb">Hemorrhagic shock risk</td><td style="padding:12px; border:1px solid #e5e7eb">911 with IV access</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Head injury (LOC/vomiting)</td><td style="padding:12px; border:1px solid #e5e7eb">Intracranial bleeding risk</td><td style="padding:12px; border:1px solid #e5e7eb">911, C-spine precautions</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Suicidal/Violent/Psychosis</td><td style="padding:12px; border:1px solid #e5e7eb">Imminent danger</td><td style="padding:12px; border:1px solid #e5e7eb">911 with crisis team</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Anaphylaxis signs</td><td style="padding:12px; border:1px solid #e5e7eb">Airway compromise</td><td style="padding:12px; border:1px solid #e5e7eb">911 with epi ready</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb">Seizure with deficit</td><td style="padding:12px; border:1px solid #e5e7eb">Status epilepticus risk</td><td style="padding:12px; border:1px solid #e5e7eb">911 with seizure protocol</td></tr>
+            </tbody>
+          </table>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">3. Vital Sign Thresholds</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
+            <div style="background:#fee2e2; padding:16px; border-radius:8px">
+              <h4 style="margin-top:0; color:#991b1b">Severe Abnormalities (Any = Severe)</h4>
+              <ul style="margin:0; padding-left:20px">
+                <li>SBP <90 mmHg</li>
+                <li>HR <40 or ≥130 bpm</li>
+                <li>RR ≥30/min</li>
+                <li>SpO₂ <90% (non-COPD) or <88% (COPD)</li>
+                <li>Temp ≥40°C or ≤35°C</li>
+                <li>Altered mental status</li>
+              </ul>
+            </div>
+            <div style="background:#fef3c7; padding:16px; border-radius:8px">
+              <h4 style="margin-top:0; color:#92400e">Moderate Abnormalities</h4>
+              <ul style="margin:0; padding-left:20px">
+                <li>SBP ≥180 mmHg</li>
+                <li>SBP ≤100 with infection</li>
+                <li>HR 50-59 or 110-129 bpm</li>
+                <li>RR 22-29/min or <10/min</li>
+                <li>SpO₂ 90-91% (varies by COPD)</li>
+                <li>Temp 38.5-39.9°C</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">4. qSOFA Score (for suspected infection)</h3>
+          <div style="background:#fef3c7; padding:16px; border-radius:8px; margin-bottom:24px">
+            <p style="margin-top:0"><strong>1 point each for:</strong></p>
+            <ul style="margin:8px 0">
+              <li>Respiratory rate ≥22/min</li>
+              <li>Systolic BP ≤100 mmHg</li>
+              <li>Altered mental status (GCS <15)</li>
+            </ul>
+            <p style="margin-bottom:0; color:#92400e"><strong>Score ≥2 = High risk for sepsis → Level 3</strong></p>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">5. Complexity Scoring (0-12 points)</h3>
+          <table style="width:100%; border-collapse:collapse; margin-bottom:24px">
+            <thead>
+              <tr style="background:#f3f4f6">
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Factor</th>
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Points</th>
+                <th style="padding:12px; text-align:left; border:1px solid #e5e7eb">Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Age</strong><br>65-79 years<br>≥80 years</td><td style="padding:12px; border:1px solid #e5e7eb"><br>+1<br>+2</td><td style="padding:12px; border:1px solid #e5e7eb">Increased vulnerability, atypical presentations</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Comorbidities</strong><br>2-3 conditions<br>≥4 or high-impact*</td><td style="padding:12px; border:1px solid #e5e7eb"><br>+1<br>+2</td><td style="padding:12px; border:1px solid #e5e7eb">*CHF, COPD on O2, CKD≥3, insulin DM, cancer, immunosuppressed</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Cognition</strong><br>Mild impairment<br>Dementia/delirium</td><td style="padding:12px; border:1px solid #e5e7eb"><br>+1<br>+2</td><td style="padding:12px; border:1px solid #e5e7eb">Communication barriers, compliance issues</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Social risks</strong><br>(max 2 points)</td><td style="padding:12px; border:1px solid #e5e7eb">+1 each<br>Max +2</td><td style="padding:12px; border:1px solid #e5e7eb">Lives alone, transport issues, food insecurity, low health literacy</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Utilization</strong><br>2+ ED or 1+ admit<br>3+ ED or 2+ admits</td><td style="padding:12px; border:1px solid #e5e7eb"><br>+1<br>+2</td><td style="padding:12px; border:1px solid #e5e7eb">Pattern of decompensation</td></tr>
+              <tr><td style="padding:12px; border:1px solid #e5e7eb"><strong>Polypharmacy</strong><br>≥5 meds<br>High-risk combos</td><td style="padding:12px; border:1px solid #e5e7eb"><br>+1<br>+1</td><td style="padding:12px; border:1px solid #e5e7eb">Interaction risks, adherence challenges</td></tr>
+            </tbody>
+          </table>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">6. Level Assignment Matrix</h3>
+          <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:24px">
+            <table style="width:100%; border-collapse:collapse">
+              <thead>
+                <tr style="background:#e5e7eb">
+                  <th style="padding:12px; border:1px solid #d1d5db">Presentation</th>
+                  <th style="padding:12px; border:1px solid #d1d5db">Complexity</th>
+                  <th style="padding:12px; border:1px solid #d1d5db">Level</th>
+                  <th style="padding:12px; border:1px solid #d1d5db">Response</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background:#dcfce7"><td style="padding:12px; border:1px solid #d1d5db">Mild</td><td style="padding:12px; border:1px solid #d1d5db">0-3</td><td style="padding:12px; border:1px solid #d1d5db"><strong>Level 1</strong></td><td style="padding:12px; border:1px solid #d1d5db">Telehealth + EMT if needed</td></tr>
+                <tr style="background:#fef3c7"><td style="padding:12px; border:1px solid #d1d5db">Mild</td><td style="padding:12px; border:1px solid #d1d5db">4-7</td><td style="padding:12px; border:1px solid #d1d5db"><strong>Level 2</strong></td><td style="padding:12px; border:1px solid #d1d5db">Duo team (EMT + APP)</td></tr>
+                <tr style="background:#fef3c7"><td style="padding:12px; border:1px solid #d1d5db">Moderate</td><td style="padding:12px; border:1px solid #d1d5db">Any</td><td style="padding:12px; border:1px solid #d1d5db"><strong>Level 2</strong></td><td style="padding:12px; border:1px solid #d1d5db">Duo team (EMT + APP)</td></tr>
+                <tr style="background:#fee2e2"><td style="padding:12px; border:1px solid #d1d5db">Mild</td><td style="padding:12px; border:1px solid #d1d5db">≥8</td><td style="padding:12px; border:1px solid #d1d5db"><strong>Level 3</strong></td><td style="padding:12px; border:1px solid #d1d5db">ED/911 transfer</td></tr>
+                <tr style="background:#fee2e2"><td style="padding:12px; border:1px solid #d1d5db">Severe</td><td style="padding:12px; border:1px solid #d1d5db">Any</td><td style="padding:12px; border:1px solid #d1d5db"><strong>Level 3</strong></td><td style="padding:12px; border:1px solid #d1d5db">ED/911 transfer</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">7. Special Upgrade Rules</h3>
+          <div style="background:#fee2e2; padding:16px; border-radius:8px; margin-bottom:24px">
+            <h4 style="margin-top:0">Automatic Level 3 Upgrades:</h4>
+            <ul>
+              <li><strong>Head injury + anticoagulant:</strong> High intracranial bleed risk</li>
+              <li><strong>Stroke symptoms ≤24 hours:</strong> Time-sensitive intervention window</li>
+              <li><strong>qSOFA ≥2:</strong> High sepsis mortality risk</li>
+            </ul>
+            <h4>Level 2 Upgrade:</h4>
+            <ul>
+              <li><strong>Family caller + no vitals:</strong> Uncertainty safety bump</li>
+            </ul>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">8. Complete Dispatch Protocols</h3>
+          
+          <div style="margin-bottom:20px">
+            <h4 style="background:#dcfce7; padding:12px; border-radius:8px; margin-bottom:12px">Level 1 - Telehealth + EMT</h4>
+            <div style="padding-left:20px">
+              <p><strong>Response time:</strong> Within 2 hours</p>
+              <p><strong>Team composition:</strong> Virtual provider + EMT for POCT if needed</p>
+              <p><strong>Equipment:</strong> Basic vitals, glucometer, EKG if indicated</p>
+              <p><strong>Protocols:</strong></p>
+              <ul>
+                <li>Schedule telehealth within 2 hours</li>
+                <li>EMT for point-of-care testing if needed</li>
+                <li>Provide home care instructions</li>
+                <li>Consider concierge onboarding if social risks present</li>
+                <li>Follow-up call within 24 hours</li>
+                <li>PCP notification within 24 hours</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px">
+            <h4 style="background:#fef3c7; padding:12px; border-radius:8px; margin-bottom:12px">Level 2 - Duo Team (EMT + APP)</h4>
+            <div style="padding-left:20px">
+              <p><strong>Response time:</strong> Within 2 hours</p>
+              <p><strong>Team composition:</strong> EMT + Advanced Practice Provider</p>
+              <p><strong>Equipment:</strong> Full diagnostic kit</p>
+              <p><strong>Protocols:</strong></p>
+              <ul>
+                <li>Dispatch within 2 hours with diagnostic kit</li>
+                <li>Equipment: 12-lead EKG, labs, IV access, medications per protocol</li>
+                <li>Can administer: IV fluids, antibiotics, bronchodilators, steroids</li>
+                <li>For suspected infection: Start sepsis screen on arrival</li>
+                <li>For COPD: Bring bronchodilators/steroids, continuous SpO₂ monitoring</li>
+                <li>Low threshold for escalation if deterioration</li>
+                <li>Can treat and release with close follow-up</li>
+                <li>Direct admit capability if needed</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px">
+            <h4 style="background:#fee2e2; padding:12px; border-radius:8px; margin-bottom:12px">Level 3 - ED/911 Transfer</h4>
+            <div style="padding-left:20px">
+              <p><strong>Response time:</strong> Immediate</p>
+              <p><strong>Team composition:</strong> EMS with ALS capability</p>
+              <p><strong>Equipment:</strong> Full ALS equipment</p>
+              <p><strong>Protocols:</strong></p>
+              <ul>
+                <li>Connect to 911/ED immediately and stay on line</li>
+                <li>Do not delay transfer to collect more data</li>
+                <li>Provide pre-arrival instructions as appropriate</li>
+                <li><strong>Condition-specific:</strong></li>
+                <ul>
+                  <li>Stroke: Capture last known well time, FAST assessment</li>
+                  <li>Chest pain: Aspirin if not contraindicated, nitro protocol</li>
+                  <li>Respiratory: High-flow O2, positioning, CPAP ready</li>
+                  <li>Bleeding: IV access x2, fluid resuscitation</li>
+                  <li>Anaphylaxis: Epi ready, airway management</li>
+                  <li>Behavioral: Crisis team coordination, safety assessment</li>
+                </ul>
+                <li>Hospital pre-notification for time-sensitive conditions</li>
+                <li>Family notification and support</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">9. Clinical Pearls & Safety Notes</h3>
+          <div style="background:#e0e7ff; padding:16px; border-radius:8px; margin-bottom:24px">
+            <ul style="margin:0; padding-left:20px">
+              <li><strong>Elderly patients:</strong> Often present atypically - confusion may be only sign of serious illness</li>
+              <li><strong>COPD patients:</strong> Use 88-92% SpO₂ targets, watch for CO₂ narcosis</li>
+              <li><strong>Diabetics:</strong> Both hyper and hypoglycemia can present with altered mental status</li>
+              <li><strong>Anticoagulation:</strong> Any trauma requires higher level of care due to bleeding risk</li>
+              <li><strong>Recent surgery:</strong> High index of suspicion for PE, infection, bleeding</li>
+              <li><strong>Social factors:</strong> May need higher level of care if no support system</li>
+              <li><strong>When in doubt:</strong> Escalate to higher level - safety over efficiency</li>
+            </ul>
+          </div>
+
+          <h3 style="color:#0f2a22; border-bottom:2px solid #e5e7eb; padding-bottom:8px">10. Quality Metrics & Validation</h3>
+          <div style="background:#f3f4f6; padding:16px; border-radius:8px">
+            <p><strong>Key Performance Indicators:</strong></p>
+            <ul>
+              <li>Appropriate triage rate: Target >90%</li>
+              <li>Under-triage rate: Must be <5% (safety critical)</li>
+              <li>Over-triage rate: Acceptable 10-15% (safety buffer)</li>
+              <li>Response time compliance: >95% within target windows</li>
+              <li>Escalation rate from L1→L2: Expected 10-15%</li>
+              <li>Escalation rate from L2→L3: Expected 5-10%</li>
+            </ul>
+            <p><strong>Required Reviews:</strong></p>
+            <ul>
+              <li>All Level 3 cases: 24-hour QA review</li>
+              <li>Any adverse events: Root cause analysis</li>
+              <li>Monthly calibration meetings</li>
+              <li>Quarterly algorithm validation</li>
+            </ul>
+          </div>
+
+          <div style="background:#fee2e2; border:1px solid #dc2626; border-radius:8px; padding:16px; margin-top:24px">
+            <strong>⚠️ Legal Notice:</strong> This tool is for decision support only. Clinical judgment must always prevail. All protocols require medical director approval and state-specific adaptation. Documentation of decision rationale is required for all cases.
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', guideHTML);
   }
 
   document.getElementById('compute').addEventListener('click', compute);
