@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alula • Triage (Prototype v0.3)</title>
+  <style>
+    :root{
+      --nav-bg:#0f2a22;
+      --nav-text:#cfe2dc;
+      --brand:#d9c06f;
+      --accent:#11a58b;
+      --bg:#f5f7f8;
+      --card:#ffffff;
+      --ink:#10231f;
+      --muted:#5a6a66;
+      --border:#e3e7ea;
+      --danger:#e11d48;
+      --warning:#f59e0b;
+      --good:#10b981;
+
+      --radius:12px;
+      --radius-sm:8px;
+      --space-1:6px;
+      --space-2:10px;
+      --space-3:14px;
+      --space-4:18px;
+      --space-5:24px;
+      --space-6:32px;
+      --section-gap:26px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      color:var(--ink); background:var(--bg); line-height:1.35;
+    }
+    .app{display:grid; grid-template-columns: 260px 1fr; grid-template-rows:64px 1fr; grid-template-areas:"sidenav topbar" "sidenav main"; height:100%}
+    .sidenav{grid-area:sidenav; background:var(--nav-bg); color:var(--nav-text); display:flex; flex-direction:column}
+    .brand{display:flex; align-items:center; gap:10px; height:64px; padding:0 var(--space-4); border-bottom:1px solid rgba(255,255,255,.06)}
+    .brand .logo{width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg, var(--brand), #ffe289); box-shadow:inset 0 0 0 2px rgba(0,0,0,.06)}
+    .brand .name{font-weight:700; color:var(--brand); letter-spacing:.4px}
+    .nav-item{padding:10px 14px; color:var(--nav-text); border-radius:10px; margin:6px 10px; cursor:pointer}
+    .nav-item.active{background:rgba(255,255,255,.12); color:#fff}
+    .topbar{grid-area:topbar; background:#0a1e19; color:white; display:flex; align-items:center; gap:12px; padding:0 var(--space-5); border-bottom:1px solid rgba(255,255,255,.06)}
+    .topbar .page-title{font-size:16px; font-weight:600}
+    .topbar .pill{display:inline-flex; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16)}
+    .main{grid-area:main; overflow:auto; padding: var(--space-5)}
+    .page{max-width:1360px; margin:0 auto; display:grid; grid-template-columns: 3fr 2fr; gap: var(--space-5)}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.03)}
+    .card h2{margin:0; padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--border); font-size:18px}
+    .card .body{padding: var(--space-5)}
+
+    /* Sections */
+    .section{margin-bottom: var(--section-gap)}
+    .section-title{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin: 0 0 10px}
+    .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+    .three{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+
+    /* Fields */
+    .field{margin-bottom:14px}
+    label{font-size:13px}
+    input[type="number"],input[type="text"],select{width:100%; padding:10px 12px; border:1px solid #d6dde0; border-radius:10px; font-size:14px; background:#fff; color:var(--ink)}
+    input[type="checkbox"]{transform:translateY(1px)}
+    .help{font-size:12px; color:var(--muted); margin-top:4px}
+
+    /* Fieldsets */
+    .fieldset{border:1px solid var(--border); border-radius:10px; padding:12px; background:#fbfdfc; margin-top:10px}
+    .fieldset .legend{font-size:13px; font-weight:600; margin-bottom:8px}
+    .check-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px}
+    .check-grid label{display:flex; gap:8px; align-items:flex-start}
+    .divider{height:1px; background:var(--border); margin: var(--space-5) 0}
+
+    /* Buttons */
+    .btn{cursor:pointer; border:0; border-radius:10px; padding:10px 14px; font-size:14px}
+    .btn.primary{background:var(--accent); color:#fff}
+    .btn.secondary{background:#0f2a22; color:#fff}
+    .btn.ghost{background:transparent; color:#0f2a22; border:1px solid #c7d3cf}
+    .btn-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .sticky-actions{position:sticky; bottom:0; padding-top:8px; background:linear-gradient(180deg, rgba(255,255,255,0), #f5f7f8 40%)}
+    .sticky-actions .bar{background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.06); padding:10px; display:flex; gap:10px; justify-content:flex-end}
+
+    /* Result panel */
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border); background:#f8fafb}
+    .pill.good{background:#eafaf3; border-color:#c9f1de; color:#145b39}
+    .pill.warn{background:#fff6e5; border-color:#ffe3b3; color:#6b4000}
+    .pill.bad{background:#fee9ee; border-color:#fbd0da; color:#7a1129}
+    .tag{display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:#eef3f5; color:#1c3430; font-size:12px; margin:0 8px 8px 0}
+    .tag.danger{background:#fee2e2; color:#7a1129}
+    .muted{color:var(--muted)}
+    .result{border-left:4px solid #e5eaee; padding-left:12px; margin:10px 0}
+    .result.L1{border-color:var(--good)}
+    .result.L2{border-color:var(--warning)}
+    .result.L3{border-color:var(--danger)}
+    ul.inline{padding-left:18px; margin:8px 0}
+    details summary{cursor:pointer; font-weight:600}
+
+    @media (max-width:1100px){ .page{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidenav">
+      <div class="brand"><div class="logo"></div><div class="name">alula</div></div>
+      <div class="nav-item">Bulletin Board</div>
+      <div class="nav-item">Tasks Board</div>
+      <div class="nav-item">Calendar</div>
+      <div class="nav-item">Document Storage</div>
+      <div class="nav-item">Health Zone</div>
+      <div class="nav-item">Team Management</div>
+      <div class="nav-item active">Triage</div>
+    </aside>
+    <header class="topbar"><div class="page-title">Triage</div><div class="pill">Prototype v0.3</div></header>
+    <main class="main">
+      <div class="page">
+        <section class="card">
+          <h2>Assessment</h2>
+          <div class="body">
+
+            <div class="section">
+              <div class="two">
+                <div class="field">
+                  <label for="scenario">Scenario (optional)</label>
+                  <select id="scenario">
+                    <option value="">- Select a sample scenario -</option>
+                    <option value="copd">COPD flare baseline 90–92</option>
+                    <option value="fall_apixaban">Fall on apixaban + new headache</option>
+                    <option value="uti_confusion">Suspected UTI + new confusion</option>
+                    <option value="gi_bleed">Black, tarry stool + dizziness</option>
+                    <option value="hyperglycemia">Hyperglycemia 350</option>
+                    <option value="hypoglycemia">Hypoglycemia 55</option>
+                    <option value="postop_pe">Post-op day 7 + pleuritic chest pain</option>
+                    <option value="suicidal">Active suicidal intent</option>
+                    <option value="med_error_opioid">Possible opioid overdose</option>
+                    <option value="tia_resolved">TIA symptoms resolved (2 h)</option>
+                  </select>
+                  <div class="help">Loads fields so you can see the logic work.</div>
+                </div>
+                <div class="field">
+                  <label for="callerType">Caller type</label>
+                  <select id="callerType">
+                    <option value="patient">Patient</option>
+                    <option value="caregiver">Caregiver</option>
+                    <option value="family">Family member – patient not present</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Core</div>
+              <div class="two">
+                <div class="field"><label for="age">Age</label><input type="number" id="age" min="0" value="78"></div>
+                <div class="field"><label for="onsetHours">Symptom onset (hours ago)</label><input type="number" id="onsetHours" min="0" value="5"></div>
+              </div>
+              <div class="two">
+                <div class="field"><label><input type="checkbox" id="suspectedInfection"> Suspected infection source</label></div>
+                <div class="field"><label><input type="checkbox" id="knownCOPD"> Known COPD with CO₂ retention baseline</label></div>
+              </div>
+              <div class="two">
+                <div class="field"><label><input type="checkbox" id="onAnticoagulant"> On anticoagulant / antiplatelet</label></div>
+                <div class="field"><label><input type="checkbox" id="postSurgical"> Post-surgical in last 14 days</label></div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Vitals</div>
+              <div class="three">
+                <div class="field"><label for="sbp">SBP (mmHg)</label><input type="number" id="sbp" placeholder="128"></div>
+                <div class="field"><label for="hr">HR (bpm)</label><input type="number" id="hr" placeholder="96"></div>
+                <div class="field"><label for="rr">RR (breaths/min)</label><input type="number" id="rr" placeholder="20"></div>
+              </div>
+              <div class="three">
+                <div class="field"><label for="spo2">SpO₂ (%)</label><input type="number" id="spo2" placeholder="95"></div>
+                <div class="field"><label for="temp">Temperature (°C)</label><input type="number" id="temp" step="0.1" placeholder="37.2"></div>
+                <div class="field"><label><input type="checkbox" id="altered"> Altered mental status</label></div>
+              </div>
+              <div class="two">
+                <div class="field"><label for="pain">Pain score (0–10)</label><input type="number" id="pain" min="0" max="10" value="2"></div>
+                <div class="field"><label for="lkwHours">Last known well (hours ago, neuro)</label><input type="number" id="lkwHours" min="0"></div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Red flag symptoms</div>
+              <div class="fieldset">
+                <div class="legend">Check if present now (any → emergency)</div>
+                <div class="check-grid">
+                  <label><input type="checkbox" id="rf_unresponsive"> Unconscious or hard to arouse</label>
+                  <label><input type="checkbox" id="rf_stroke"> FAST positive or new focal neuro signs</label>
+                  <label><input type="checkbox" id="rf_chestpain"> Chest pain with high-risk features (≥10 min, pressure, radiation or diaphoresis)</label>
+                  <label><input type="checkbox" id="rf_severeSOB"> Severe shortness of breath or cannot speak in full sentences</label>
+                  <label><input type="checkbox" id="rf_bleeding"> Major bleeding / hematemesis / melena + dizziness/syncope</label>
+                  <label><input type="checkbox" id="rf_headInjury"> Head injury with LOC, vomiting, severe headache, or confusion</label>
+                  <label><input type="checkbox" id="rf_behavior"> Active suicidal intent, violent behavior, or dangerous psychosis</label>
+                  <label><input type="checkbox" id="rf_anaphylaxis"> Anaphylaxis signs (hives + airway compromise, swelling, wheeze)</label>
+                  <label><input type="checkbox" id="rf_seizure"> Seizure with persistent deficit or repeated seizures</label>
+                </div>
+                <div class="help">If unsure, leave unchecked and the rules will escalate based on vitals and context.</div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Comorbidity and context</div>
+
+              <div class="two">
+                <div class="field"><label for="ccCount">Total chronic conditions (count)</label><input type="number" id="ccCount" min="0" value="3"></div>
+                <div class="field"><label for="medCount">Daily medications (count)</label><input type="number" id="medCount" min="0" value="8"></div>
+              </div>
+
+              <div class="fieldset">
+                <div class="legend">High-impact conditions (check all that apply)</div>
+                <div class="check-grid">
+                  <label><input type="checkbox" id="riskCHF"> CHF</label>
+                  <label><input type="checkbox" id="riskCOPDO2"> COPD on home oxygen</label>
+                  <label><input type="checkbox" id="riskCKD"> CKD stage ≥3</label>
+                  <label><input type="checkbox" id="riskInsulinDM"> Diabetes on insulin</label>
+                  <label><input type="checkbox" id="riskCancer"> Active cancer</label>
+                  <label><input type="checkbox" id="riskImmuno"> Immunosuppressed</label>
+                </div>
+                <div class="help">These conditions increase the patient complexity score.</div>
+              </div>
+
+              <div class="two" style="margin-top:12px">
+                <div class="field">
+                  <label for="cog">Cognitive baseline</label>
+                  <select id="cog">
+                    <option value="none">None</option>
+                    <option value="mci">Mild impairment</option>
+                    <option value="dementia">Dementia or frequent delirium</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <div class="fieldset">
+                    <div class="legend">Social risks (select any – we count up to 2)</div>
+                    <div class="check-grid">
+                      <label><input type="checkbox" id="sd_livesAlone"> Lives alone or unreliable caregiver</label>
+                      <label><input type="checkbox" id="sd_transport"> Poor transportation</label>
+                      <label><input type="checkbox" id="sd_food"> Food insecurity</label>
+                      <label><input type="checkbox" id="sd_literacy"> Low health literacy</label>
+                    </div>
+                    <div class="help">We cap social risk points at 2 to avoid over-weighting.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="two">
+                <div class="field"><label for="edVisits">ED visits in last 6 months</label><input type="number" id="edVisits" min="0" value="1"></div>
+                <div class="field"><label for="admits">Admissions in last 6 months</label><input type="number" id="admits" min="0" value="0"></div>
+              </div>
+
+              <div class="fieldset">
+                <div class="legend">High-risk medications (check if current)</div>
+                <div class="check-grid">
+                  <label><input type="checkbox" id="medAnticoag"> Anticoagulant / antiplatelet</label>
+                  <label><input type="checkbox" id="medOpioid"> Opioid</label>
+                  <label><input type="checkbox" id="medInsulin"> Insulin</label>
+                  <label><input type="checkbox" id="recentMedChange"> Recent medication change</label>
+                </div>
+                <div class="help">Used for polypharmacy scoring and post-processing upgrades.</div>
+              </div>
+            </div>
+
+            <div class="sticky-actions">
+              <div class="bar">
+                <button class="btn ghost" id="reset">Reset</button>
+                <button class="btn ghost" id="copy">Copy summary</button>
+                <button class="btn secondary" id="speak">Speak result</button>
+                <button class="btn primary" id="compute">Compute triage level</button>
+              </div>
+              <div class="help">Prototype only. Not for clinical use. Requires medical director sign-off and state localization.</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card">
+          <h2>Decision summary</h2>
+          <div class="body">
+            <div id="result" class="result"><p class="muted">Enter data and select Compute. Or load a sample scenario.</p></div>
+            <div class="section">
+              <div class="section-title">Explainability</div>
+              <div id="explain"></div>
+            </div>
+            <div class="section">
+              <div class="section-title">qSOFA and vitals</div>
+              <div id="vitals"></div>
+            </div>
+            <div class="section">
+              <div class="section-title">Patient complexity</div>
+              <div id="complex"></div>
+            </div>
+            <details>
+              <summary>Dispatch guidance</summary>
+              <ul id="dispatch" class="inline"></ul>
+            </details>
+          </div>
+        </aside>
+      </div>
+
+      <section class="card" style="margin-top: var(--space-5)">
+        <h2>How it decides</h2>
+        <div class="body">
+          <ol>
+            <li>Check for absolute red flags. If any are present, Level 3 with 911/ED handoff.</li>
+            <li>Compute vital severity and qSOFA when infection is suspected.</li>
+            <li>Classify presentation severity from vitals and symptoms.</li>
+            <li>Score patient complexity (0–12) from age, comorbidities, cognition, social factors, utilization and polypharmacy.</li>
+            <li>Map to level: Level 1 if mild and complexity ≤3. Level 2 if moderate or complexity 4–7. Level 3 if severe or qSOFA ≥2. Upgrades for head injury on anticoagulants and recent neuro symptoms.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+  function num(v){ const n=parseFloat(v); return Number.isFinite(n)?n:null; }
+  function val(id){ const el=document.getElementById(id); if(!el) return null; if(el.type==='checkbox') return el.checked; if(el.tagName==='SELECT') return el.value; return el.value; }
+  function setVal(id,v){ const el=document.getElementById(id); if(!el) return; if(el.type==='checkbox') el.checked=!!v; else el.value=v; }
+
+  function compute(){
+    const reasons=[], dispatch=[], flags=[];
+    const age=num(val('age')), onsetH=num(val('onsetHours')), lkwH=num(val('lkwHours'));
+    const sbp=num(val('sbp')), hr=num(val('hr')), rr=num(val('rr')), spo2=num(val('spo2')), temp=num(val('temp')), pain=num(val('pain'));
+    const altered=!!val('altered');
+    const suspectedInfection=!!val('suspectedInfection'); const knownCOPD=!!val('knownCOPD'); const onAnticoagulant=!!val('onAnticoagulant');
+
+    const rf={ unresponsive:!!val('rf_unresponsive'), stroke:!!val('rf_stroke'), chestPain:!!val('rf_chestpain'), severeSOB:!!val('rf_severeSOB'), bleeding:!!val('rf_bleeding'), headInjury:!!val('rf_headInjury'), behavior:!!val('rf_behavior'), anaphylaxis:!!val('rf_anaphylaxis'), seizure:!!val('rf_seizure') };
+
+    let abnCount=0, severeAbn=0, moderateAbn=0;
+    function abn(check, severity, msg){ if(check){ abnCount++; if(severity==='severe') severeAbn++; if(severity==='moderate') moderateAbn++; reasons.push(msg);} }
+    if(sbp!==null){ abn(sbp<90,'severe',`SBP ${sbp}<90`); abn(sbp>=180,'moderate',`SBP ${sbp}≥180`); if(suspectedInfection) abn(sbp<=100,'moderate',`SBP ${sbp}≤100 with suspected infection`); }
+    if(hr!==null){ abn(hr<40,'severe',`HR ${hr}<40`); abn(hr>=130,'severe',`HR ${hr}≥130`); if(hr>=110&&hr<130) abn(true,'moderate',`HR ${hr}≥110`); if(hr<50&&hr>=40) abn(true,'moderate',`HR ${hr}<50`); }
+    if(rr!==null){ abn(rr>=30,'severe',`RR ${rr}≥30`); if(rr>=22&&rr<30) abn(true,'moderate',`RR ${rr}≥22`); if(rr<10) abn(true,'moderate',`RR ${rr}<10`); }
+    if(spo2!==null){ if(knownCOPD){ abn(spo2<88,'severe',`SpO₂ ${spo2}<88 (COPD)`); if(spo2>=88&&spo2<90) abn(true,'moderate',`SpO₂ ${spo2} 88–89 (COPD)`); if(spo2>=90&&spo2<92) abn(true,'moderate',`SpO₂ ${spo2} 90–91 (COPD)`);} else { abn(spo2<90,'severe',`SpO₂ ${spo2}<90`); if(spo2>=90&&spo2<92) abn(true,'moderate',`SpO₂ ${spo2} 90–91`);} }
+    if(temp!==null){ abn(temp>=40,'severe',`Temp ${temp}≥40°C`); abn(temp<=35,'severe',`Temp ${temp}≤35°C`); if(temp>=38.5&&temp<40) abn(true,'moderate',`Temp ${temp}≥38.5°C`); }
+    if(altered){ abn(true,'severe','Altered mental status'); }
+
+    let qsofa=0;
+    if(suspectedInfection){ if(rr!==null&&rr>=22) qsofa++; if(sbp!==null&&sbp<=100) qsofa++; if(altered) qsofa++; }
+
+    const computedRedFlags=[];
+    if(rf.stroke) computedRedFlags.push(lkwH!==null&&lkwH<=24?'Possible stroke/TIA within 24 h':'Possible stroke/TIA');
+    if(rf.chestPain) computedRedFlags.push('High-risk chest pain');
+    if(rf.severeSOB) computedRedFlags.push('Severe shortness of breath');
+    if(rf.bleeding) computedRedFlags.push('Major bleeding / GI bleed signs');
+    if(rf.unresponsive) computedRedFlags.push('Unresponsive or hard to arouse');
+    if(rf.behavior) computedRedFlags.push('Imminent behavioral danger');
+    if(rf.anaphylaxis) computedRedFlags.push('Anaphylaxis concern');
+    if(rf.seizure) computedRedFlags.push('Seizure with persistent deficit');
+    if(rf.headInjury) computedRedFlags.push(onAnticoagulant?'Head injury on anticoagulant':'Concerning head injury');
+
+    let severity='mild';
+    if(severeAbn>=1) severity='severe';
+    else if(qsofa>=2) severity='severe';
+    else if(moderateAbn>=1 || (pain!==null && pain>=7) || (onsetH!==null && onsetH<24)) severity='moderate';
+
+    const ccCount=Math.max(0, num(val('ccCount'))||0);
+    const medCount=Math.max(0, num(val('medCount'))||0);
+    const riskCHF=!!val('riskCHF'), riskCOPDO2=!!val('riskCOPDO2'), riskCKD=!!val('riskCKD'), riskInsulinDM=!!val('riskInsulinDM'), riskCancer=!!val('riskCancer'), riskImmuno=!!val('riskImmuno');
+    const cog=val('cog');
+    const edVisits=Math.max(0, num(val('edVisits'))||0), admits=Math.max(0, num(val('admits'))||0);
+    const sd=['sd_livesAlone','sd_transport','sd_food','sd_literacy'].map(id=>!!val(id)).filter(Boolean).length;
+    const medAnticoag=!!val('medAnticoag'), medOpioid=!!val('medOpioid'), medInsulin=!!val('medInsulin'), recentMedChange=!!val('recentMedChange');
+
+    let complexity=0;
+    if(age!==null){ if(age>=80) complexity+=2; else if(age>=65) complexity+=1; }
+    const highRisk=[riskCHF,riskCOPDO2,riskCKD,riskInsulinDM,riskCancer,riskImmuno].some(Boolean);
+    if(ccCount>=4 || highRisk) complexity+=2; else if(ccCount>=2) complexity+=1;
+    if(cog==='mci') complexity+=1; if(cog==='dementia') complexity+=2;
+    complexity+=Math.min(2, sd);
+    if(edVisits>=3 || admits>=2) complexity+=2; else if(edVisits>=2 || admits>=1) complexity+=1;
+    let polyPts=0; if(medCount>=5) polyPts+=1; if((medAnticoag&&medOpioid)||(medAnticoag&&medInsulin)||(medOpioid&&medInsulin)||recentMedChange) polyPts+=1;
+    complexity+=Math.min(2, polyPts);
+
+    const callerType=val('callerType'); let uncertainty=0;
+    if(callerType==='family') uncertainty+=1;
+    if((sbp===null&&hr===null&&rr===null&&spo2===null&&temp===null)&&(rf.stroke||rf.chestPain||rf.severeSOB||rf.bleeding||rf.headInjury)){ uncertainty+=1; }
+
+    let level='L1', label='Level 1 • Telehealth + EMT';
+    if(computedRedFlags.length>0 || rf.unresponsive || rf.behavior || rf.anaphylaxis){ level='L3'; label='Level 3 • ED/911'; reasons.push('Absolute red flag present'); }
+    else if(severity==='severe'){ level='L3'; label='Level 3 • ED/911'; reasons.push('Severe presentation'); }
+    else if(qsofa>=2){ level='L3'; label='Level 3 • ED/911 (qSOFA ≥2)'; reasons.push('qSOFA ≥2'); }
+    else if(severity==='moderate' || complexity>=4){ level='L2'; label='Level 2 • Duo team (EMT + APP)'; }
+
+    if(level!=='L3'){
+      if(rf.headInjury && onAnticoagulant){ level='L3'; label='Level 3 • ED/911 (head injury on anticoagulant)'; reasons.push('Head injury on anticoagulant'); }
+      if(rf.stroke && (lkwH!==null && lkwH<=24)){ level='L3'; label='Level 3 • ED/911 (recent neuro symptoms)'; reasons.push('Recent neuro symptoms ≤24 h'); }
+    }
+    if(level==='L1' && uncertainty>=1){ level='L2'; label='Level 2 • Duo team (uncertainty safety bump)'; reasons.push('Caller uncertainty safety bump'); }
+
+    if(level==='L3'){ dispatch.push('Connect to 911/ED now and stay on the line'); dispatch.push('Do not delay transfer to collect more data'); if(rf.stroke) dispatch.push('If neuro, capture last known well time en route'); }
+    else if(level==='L2'){ dispatch.push('Dispatch Duo team within 2 h with diagnostics kit (EKG, labs, IV, meds per protocol)'); if(suspectedInfection) dispatch.push('Start sepsis screen on arrival; low threshold to transfer if deterioration'); if(knownCOPD) dispatch.push('Bring bronchodilators/steroids; monitor SpO₂ continuously'); }
+    else { dispatch.push('Schedule telehealth inside 2 h and EMT for POCT if needed'); dispatch.push('Provide home instructions; consider concierge onboarding if social risks present'); }
+
+    const resEl=document.getElementById('result');
+    resEl.className='result '+level;
+    resEl.innerHTML=`
+      <div class="pill ${level==='L1'?'good':level==='L2'?'warn':'bad'}">${label}</div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+        <span class="pill">Severity: ${severity}</span>
+        <span class="pill">Complexity score: ${complexity}</span>
+        ${suspectedInfection ? `<span class="pill warn">qSOFA: ${qsofa}</span>` : ''}
+      </div>
+      ${computedRedFlags.length ? `<div style="margin-top:8px">${computedRedFlags.map(s=>`<span class="tag danger">${s}</span>`).join('')}</div>` : ''}
+    `;
+
+    const items=[...reasons];
+    if(abnCount) items.unshift(`${abnCount} abnormal vital ${abnCount>1?'findings':'finding'} (${severeAbn} severe, ${moderateAbn} moderate)`);
+    if(suspectedInfection) items.push(`Infection suspected (qSOFA ${qsofa})`);
+    document.getElementById('explain').innerHTML = items.length ? `<ul class="inline">${items.map(i=>`<li>${i}</li>`).join('')}</ul>` : '<p class="muted">No rule hits yet.</p>';
+
+    const vtags=[]; if(sbp!==null) vtags.push(`SBP ${sbp}`); if(hr!==null) vtags.push(`HR ${hr}`); if(rr!==null) vtags.push(`RR ${rr}`);
+    if(spo2!==null) vtags.push(`SpO₂ ${spo2}% ${knownCOPD?'(COPD baseline)':''}`); if(temp!==null) vtags.push(`Temp ${temp}°C`); vtags.push(altered?'Altered':'Not altered');
+    document.getElementById('vitals').innerHTML = vtags.length ? vtags.map(t=>`<span class="tag">${t}</span>`).join('') : '<p class="muted">No vitals entered.</p>';
+
+    const compBits=[]; compBits.push(age!==null?`Age ${age}`:'Age unknown'); compBits.push(`${ccCount} chronic conditions`); compBits.push(`${medCount} daily meds`);
+    if(val('cog')!=='none') compBits.push(`Cognition: ${val('cog')}`);
+    const sdCount=['sd_livesAlone','sd_transport','sd_food','sd_literacy'].map(id=>!!val(id)).filter(Boolean).length; if(sdCount>0) compBits.push(`${sdCount} SDoH risks`);
+    if(num(val('edVisits'))>0) compBits.push(`${num(val('edVisits'))} ED visits`); if(num(val('admits'))>0) compBits.push(`${num(val('admits'))} admits`);
+    if(val('medAnticoag')) compBits.push('Anticoagulant'); if(val('medOpioid')) compBits.push('Opioid'); if(val('medInsulin')) compBits.push('Insulin'); if(val('recentMedChange')) compBits.push('Recent med change');
+    document.getElementById('complex').innerHTML = compBits.length ? compBits.map(t=>`<span class="tag">${t}</span>`).join('') : '<p class="muted">No context yet.</p>';
+
+    document.getElementById('dispatch').innerHTML = dispatch.map(d=>`<li>${d}</li>`).join('');
+
+    return { level, label, severity, complexity, qsofa, reasons:items, dispatch, flags:computedRedFlags };
+  }
+
+  function resetForm(){
+    document.querySelectorAll('input').forEach(el=>{ if(el.type==='checkbox') el.checked=false; else el.value=''; });
+    document.querySelectorAll('select').forEach(el=>{ if(el.id==='callerType') el.value='patient'; else el.value=''; });
+    document.getElementById('age').value=78; document.getElementById('onsetHours').value=5; document.getElementById('pain').value=2;
+    document.getElementById('result').className='result'; document.getElementById('result').innerHTML='<p class="muted">Enter data and select Compute. Or load a sample scenario.</p>';
+    document.getElementById('explain').innerHTML=''; document.getElementById('vitals').innerHTML=''; document.getElementById('complex').innerHTML=''; document.getElementById('dispatch').innerHTML='';
+  }
+  function copySummary(){
+    const out=compute(); const lines=[];
+    lines.push(`# Triage result: ${out.label}`); lines.push(`Severity: ${out.severity}`); lines.push(`Complexity score: ${out.complexity}`); lines.push(`qSOFA: ${out.qsofa}`);
+    if(out.flags.length) lines.push(`Red flags: ${out.flags.join('; ')}`); lines.push('Reasons:'); out.reasons.forEach(r=>lines.push(`- ${r}`)); lines.push('Dispatch guidance:'); out.dispatch.forEach(d=>lines.push(`- ${d}`));
+    const text=lines.join('\n'); navigator.clipboard.writeText(text).then(()=>alert('Case summary copied')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');alert('Case summary copied')}finally{document.body.removeChild(ta)} });
+  }
+  function speakResult(){ const out=compute(); const msg=new SpeechSynthesisUtterance(`${out.label}. Severity ${out.severity}. Complexity score ${out.complexity}.`); window.speechSynthesis.cancel(); window.speechSynthesis.speak(msg); }
+  function loadScenario(id){
+    resetForm();
+    switch(id){
+      case 'copd': setVal('age',79); setVal('knownCOPD',true); setVal('spo2',90); setVal('rr',24); setVal('sbp',128); setVal('hr',104); setVal('pain',3); break;
+      case 'fall_apixaban': setVal('age',83); setVal('onAnticoagulant',true); setVal('rf_headInjury',true); setVal('pain',6); setVal('sbp',142); setVal('hr',92); setVal('rr',18); break;
+      case 'uti_confusion': setVal('age',85); setVal('suspectedInfection',true); setVal('altered',true); setVal('rr',24); setVal('sbp',104); setVal('temp',38.6); setVal('pain',2); break;
+      case 'gi_bleed': setVal('age',82); setVal('rf_bleeding',true); setVal('sbp',96); setVal('hr',118); setVal('rr',22); break;
+      case 'hyperglycemia': setVal('age',74); setVal('hr',96); setVal('rr',20); setVal('sbp',128); setVal('temp',37.1); setVal('pain',3); break;
+      case 'hypoglycemia': setVal('age',70); setVal('hr',88); setVal('rr',18); setVal('sbp',120); setVal('temp',36.7); setVal('pain',1); break;
+      case 'postop_pe': setVal('age',76); setVal('postSurgical',true); setVal('rf_chestpain',true); setVal('rr',28); setVal('sbp',110); setVal('hr',112); setVal('pain',7); break;
+      case 'suicidal': setVal('age',48); setVal('rf_behavior',true); break;
+      case 'med_error_opioid': setVal('age',62); setVal('hr',52); setVal('rr',10); setVal('spo2',89); setVal('rf_severeSOB',true); setVal('medOpioid',true); break;
+      case 'tia_resolved': setVal('age',81); setVal('rf_stroke',true); setVal('lkwHours',2); setVal('sbp',158); setVal('hr',82); setVal('rr',18); break;
+    }
+    compute();
+  }
+
+  document.getElementById('compute').addEventListener('click', compute);
+  document.getElementById('reset').addEventListener('click', resetForm);
+  document.getElementById('copy').addEventListener('click', copySummary);
+  document.getElementById('speak').addEventListener('click', speakResult);
+  document.getElementById('scenario').addEventListener('change', e=>{ if(e.target.value) loadScenario(e.target.value); });
+  resetForm();
+</script>
+</body>
+</html>
